@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>실시간 자막</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      user-select: none;
+    }
+
+    #caption-area {
+      width: 100%;
+      max-width: 900px;
+      padding: 40px 48px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 16px;
+    }
+
+    .line {
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #111;
+      transition: opacity 0.3s;
+    }
+
+    .line.prev {
+      opacity: 0.35;
+      font-size: 38px;
+      font-weight: 500;
+    }
+
+    .line.current {
+      opacity: 1;
+    }
+
+    .interim {
+      color: #888;
+    }
+
+    #status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255,255,255,0.95);
+      border-top: 1px solid #eee;
+    }
+
+    #mic-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: #1a1a1a;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #mic-btn:active { transform: scale(0.93); }
+    #mic-btn.listening { background: #e53935; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); }
+    }
+
+    #status-text {
+      font-size: 15px;
+      color: #666;
+    }
+
+    #clear-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 14px;
+      color: #888;
+      cursor: pointer;
+    }
+
+    #clear-btn:hover { background: #f5f5f5; }
+
+    #beta-badge {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      background: #f0f0f0;
+      color: #888;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    #no-support {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      color: #999;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="beta-badge">베타 테스트</div>
+
+  <div id="caption-area">
+    <div class="line prev" id="prev-line"></div>
+    <div class="line current" id="curr-line"></div>
+  </div>
+
+  <div id="status-bar">
+    <button id="mic-btn" title="마이크 시작/정지">🎤</button>
+    <span id="status-text">마이크 버튼을 눌러 시작하세요</span>
+    <button id="clear-btn">지우기</button>
+  </div>
+
+  <div id="no-support">
+    이 브라우저는 음성 인식을 지원하지 않습니다.<br>
+    Chrome 브라우저를 사용해주세요.
+  </div>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      document.querySelector('#caption-area').style.display = 'none';
+      document.querySelector('#status-bar').style.display = 'none';
+      document.querySelector('#no-support').style.display = 'block';
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ko-KR';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      const prevLine = document.getElementById('prev-line');
+      const currLine = document.getElementById('curr-line');
+      const micBtn = document.getElementById('mic-btn');
+      const statusText = document.getElementById('status-text');
+      const clearBtn = document.getElementById('clear-btn');
+
+      let isListening = false;
+      let lines = ['', ''];  // [prev, current]
+
+      function updateDisplay(interimText = '') {
+        prevLine.textContent = lines[0];
+        if (interimText) {
+          currLine.innerHTML = `${lines[1]}<span class="interim">${interimText}</span>`;
+        } else {
+          currLine.textContent = lines[1];
+        }
+      }
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        let finalText = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalText += result[0].transcript;
+          } else {
+            interim += result[0].transcript;
+          }
+        }
+
+        if (finalText) {
+          const combined = lines[1] + finalText;
+          // 현재 줄이 길어지면 위로 올리고 새 줄 시작
+          if (combined.length > 24) {
+            lines[0] = combined;
+            lines[1] = '';
+          } else {
+            lines[1] = combined;
+          }
+        }
+
+        updateDisplay(interim);
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          statusText.textContent = '마이크 권한이 필요합니다';
+          setListening(false);
+        } else if (e.error !== 'no-speech') {
+          console.warn('인식 오류:', e.error);
+        }
+      };
+
+      recognition.onend = () => {
+        // 자동 재시작 (continuous 유지)
+        if (isListening) recognition.start();
+      };
+
+      function setListening(state) {
+        isListening = state;
+        micBtn.classList.toggle('listening', state);
+        micBtn.textContent = state ? '⏹' : '🎤';
+        statusText.textContent = state ? '듣는 중...' : '마이크 버튼을 눌러 시작하세요';
+      }
+
+      micBtn.addEventListener('click', () => {
+        if (isListening) {
+          recognition.stop();
+          setListening(false);
+        } else {
+          recognition.start();
+          setListening(true);
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        lines = ['', ''];
+        updateDisplay();
+      });
+    }
+  </script>
+</body>
+</html>
