@@ -176,8 +176,8 @@
       const clearBtn = document.getElementById('clear-btn');
 
       let isListening = false;
-      let prevText    = '';   // 이전 문장 (확정)
-      let currText    = '';   // 현재 문장 (확정 누적)
+      let prevText    = '';
+      let currText    = '';
       let silenceTimer = null;
 
       // maxAlternatives 중 신뢰도 가장 높은 후보
@@ -190,17 +190,37 @@
       }
 
       function updateDisplay(interim = '') {
-        prevEl.textContent  = prevText;
+        prevEl.textContent = prevText;
         divider.style.display = prevText ? 'block' : 'none';
         currEl.innerHTML = currText
           + (interim ? `<span class="interim"> ${interim}</span>` : '');
       }
 
-      // isFinal 결과가 올 때마다 = 문장 1개 완성 → 줄바꿈
-      function commitSentence(text) {
+      // 한국어 문장 끝 패턴으로 분리
+      // ~요, ~다, ~까, ~죠, ~네, ~군, ~어, ~야 + (공백 or 끝)
+      const KO_SPLIT = /((?:습니다|입니다|합니다|됩니다|있습니다|없습니다|[요죠네군다까어야])(?=\s|$))/g;
+
+      function splitSentences(text) {
+        // 패턴 기준으로 자르되 구분자 포함
+        const parts = text.split(KO_SPLIT).filter(s => s.trim());
+        const sentences = [];
+        for (let i = 0; i < parts.length; i += 2) {
+          const body = parts[i] || '';
+          const ender = parts[i + 1] || '';
+          const s = (body + ender).trim();
+          if (s) sentences.push(s);
+        }
+        return sentences.length ? sentences : [text];
+      }
+
+      // 확정 텍스트를 문장 단위로 나눠서 차례로 표시
+      function commitText(text) {
         if (!text) return;
-        prevText = currText;   // 이전 줄로 밀기
-        currText = text;       // 새 문장 시작
+        const sentences = splitSentences(text);
+        sentences.forEach(s => {
+          prevText = currText;
+          currText = s;
+        });
         updateDisplay();
       }
 
@@ -210,8 +230,7 @@
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const r = event.results[i];
           if (r.isFinal) {
-            // 확정된 문장 → 무조건 새 줄
-            commitSentence(getBest(r));
+            commitText(getBest(r));
           } else {
             interim += r[0].transcript;
           }
@@ -220,7 +239,7 @@
         updateDisplay(interim);
       };
 
-      // 침묵 2초 후 현재 문장 확정
+      // 침묵 2초 후 현재 문장 이전으로 밀기
       recognition.onspeechend = () => {
         silenceTimer = setTimeout(() => {
           if (currText) {
