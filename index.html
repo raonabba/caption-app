@@ -24,17 +24,143 @@
       user-select: none;
     }
 
+    /* ── 모드 선택 화면 ── */
+    #mode-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 40px 24px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .voix-title {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: #111;
+    }
+
+    .voix-sub {
+      font-size: 15px;
+      color: #999;
+      margin-top: -16px;
+    }
+
+    .mode-btn {
+      width: 100%;
+      padding: 22px 24px;
+      border-radius: 16px;
+      border: 2px solid #eee;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .mode-btn:hover { border-color: #1a1a1a; background: #fafafa; }
+    .mode-btn .mode-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+    .mode-btn .mode-label { font-size: 20px; font-weight: 700; color: #111; }
+    .mode-btn .mode-desc  { font-size: 13px; color: #888; margin-top: 4px; }
+
+    /* ── 룸 코드 화면 ── */
+    #room-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 40px 24px;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .room-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111;
+      text-align: center;
+    }
+
+    .room-code-display {
+      font-size: 64px;
+      font-weight: 900;
+      letter-spacing: 12px;
+      color: #111;
+      background: #f5f5f5;
+      border-radius: 16px;
+      padding: 20px 32px;
+      text-align: center;
+    }
+
+    .room-hint { font-size: 14px; color: #999; text-align: center; }
+
+    .room-input {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      text-align: center;
+      width: 200px;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      padding: 14px 16px;
+      outline: none;
+      color: #111;
+    }
+    .room-input:focus { border-color: #1a1a1a; }
+
+    .connect-btn {
+      width: 100%;
+      padding: 16px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .connect-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .back-btn:hover { color: #555; }
+
+    .conn-status {
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+      min-height: 20px;
+    }
+    .conn-status.ok   { color: #2e7d32; }
+    .conn-status.err  { color: #c62828; }
+
+    /* ── 자막 화면 (공통) ── */
+    #caption-screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+    }
+
     #caption-area {
+      flex: 1;
       width: 100%;
       max-width: 960px;
-      padding: 40px 48px 120px;
+      margin: 0 auto;
+      padding: 40px 48px 20px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       gap: 20px;
     }
 
-    /* 2줄 전 문장: 가장 흐리게 */
     .line-old {
       font-size: 30px;
       font-weight: 400;
@@ -43,8 +169,6 @@
       min-height: 1.4em;
       word-break: keep-all;
     }
-
-    /* 1줄 전 문장 */
     .line-prev {
       font-size: 38px;
       font-weight: 500;
@@ -53,16 +177,12 @@
       min-height: 1.4em;
       word-break: keep-all;
     }
-
-    /* 구분선 */
     .divider {
       width: 48px;
       height: 3px;
       background: #e0e0e0;
       border-radius: 2px;
     }
-
-    /* 현재 문장: 크고 진하게 */
     .line-current {
       font-size: 56px;
       font-weight: 800;
@@ -71,18 +191,15 @@
       min-height: 1.35em;
       word-break: keep-all;
     }
+    .interim { color: #bbb; font-weight: 600; }
 
-    /* 인식 중 */
-    .interim {
-      color: #bbb;
-      font-weight: 600;
-    }
+    /* DISPLAY 모드: 글자 더 크게 */
+    body.display-mode .line-old     { font-size: 36px; }
+    body.display-mode .line-prev    { font-size: 48px; }
+    body.display-mode .line-current { font-size: 72px; }
 
     #status-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -106,7 +223,6 @@
       justify-content: center;
       transition: background 0.2s, transform 0.1s;
     }
-
     #mic-btn:active { transform: scale(0.93); }
     #mic-btn.listening { background: #e53935; animation: pulse 1.5s infinite; }
 
@@ -127,6 +243,29 @@
       cursor: pointer;
     }
     #clear-btn:hover { background: #f5f5f5; }
+
+    /* DISPLAY 모드: 상태바 간소화 */
+    #display-status-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid #eee;
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .room-badge {
+      background: #f0f0f0;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      letter-spacing: 2px;
+    }
 
     #beta-badge {
       position: fixed;
@@ -152,17 +291,73 @@
 
   <div id="beta-badge">베타 테스트</div>
 
-  <div id="caption-area">
-    <div class="line-old"  id="old-line"></div>
-    <div class="line-prev" id="prev-line"></div>
-    <div class="divider"   id="divider" style="display:none"></div>
-    <div class="line-current" id="curr-line"></div>
+  <!-- ① 모드 선택 화면 -->
+  <div id="mode-screen">
+    <div class="voix-title">VOIX</div>
+    <div class="voix-sub">실시간 자막</div>
+
+    <button class="mode-btn" id="btn-solo">
+      <span class="mode-icon">🎤</span>
+      <div class="mode-label">혼자 사용</div>
+      <div class="mode-desc">이 기기에서 마이크로 음성인식 후 자막 표시</div>
+    </button>
+
+    <button class="mode-btn" id="btn-send">
+      <span class="mode-icon">📱</span>
+      <div class="mode-label">SEND — 말하는 기기</div>
+      <div class="mode-desc">음성을 인식해 다른 화면으로 전송</div>
+    </button>
+
+    <button class="mode-btn" id="btn-display">
+      <span class="mode-icon">📺</span>
+      <div class="mode-label">DISPLAY — 보여주는 기기</div>
+      <div class="mode-desc">다른 기기에서 전송한 자막을 큰 화면에 표시</div>
+    </button>
   </div>
 
-  <div id="status-bar">
-    <button id="mic-btn" title="마이크 시작/정지">🎤</button>
-    <span id="status-text">마이크 버튼을 눌러 시작하세요</span>
-    <button id="clear-btn">지우기</button>
+  <!-- ② 룸코드 화면 (SEND) -->
+  <div id="room-screen-send" style="display:none; flex-direction:column; align-items:center; gap:20px; padding:40px 24px; width:100%; max-width:360px;">
+    <button class="back-btn" data-back="mode">← 뒤로</button>
+    <div class="room-title">SEND 모드</div>
+    <div class="room-hint">아래 코드를 DISPLAY 기기에 입력하세요</div>
+    <div class="room-code-display" id="generated-code">----</div>
+    <div class="conn-status" id="send-conn-status">서버 연결 중...</div>
+    <button class="connect-btn" id="btn-start-send" disabled>자막 시작</button>
+    <div class="room-hint" style="font-size:12px">연결 후 자막 시작을 누르세요</div>
+  </div>
+
+  <!-- ② 룸코드 화면 (DISPLAY) -->
+  <div id="room-screen-display" style="display:none; flex-direction:column; align-items:center; gap:20px; padding:40px 24px; width:100%; max-width:360px;">
+    <button class="back-btn" data-back="mode">← 뒤로</button>
+    <div class="room-title">DISPLAY 모드</div>
+    <div class="room-hint">SEND 기기에 표시된 4자리 코드를 입력하세요</div>
+    <input class="room-input" id="room-code-input" type="tel" maxlength="4" placeholder="0000" inputmode="numeric">
+    <div class="conn-status" id="display-conn-status"></div>
+    <button class="connect-btn" id="btn-connect-display">연결하기</button>
+  </div>
+
+  <!-- ③ 자막 화면 -->
+  <div id="caption-screen">
+    <div id="caption-area">
+      <div class="line-old"  id="old-line"></div>
+      <div class="line-prev" id="prev-line"></div>
+      <div class="divider"   id="divider" style="display:none"></div>
+      <div class="line-current" id="curr-line"></div>
+    </div>
+
+    <!-- SEND / SOLO 모드용 하단 바 -->
+    <div id="status-bar">
+      <button id="mic-btn" title="마이크 시작/정지">🎤</button>
+      <span id="status-text">마이크 버튼을 눌러 시작하세요</span>
+      <button id="clear-btn">지우기</button>
+    </div>
+
+    <!-- DISPLAY 모드용 하단 바 -->
+    <div id="display-status-bar" style="display:none">
+      <span id="display-ws-status">연결 대기 중...</span>
+      <span class="room-badge" id="display-room-badge"></span>
+      <button class="back-btn" data-back="mode">종료</button>
+    </div>
   </div>
 
   <div id="no-support">
@@ -171,75 +366,155 @@
   </div>
 
   <script>
-    // 서비스 워커 등록 (PWA)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
+    // ── WebSocket 서버 URL (Railway 배포 후 이 주소를 교체하세요) ──
+    const WS_URL = 'wss://voix-server.up.railway.app';
+
+    // ── 화면 전환 ──
+    const screens = {
+      mode:           document.getElementById('mode-screen'),
+      'room-send':    document.getElementById('room-screen-send'),
+      'room-display': document.getElementById('room-screen-display'),
+      caption:        document.getElementById('caption-screen'),
+    };
+
+    function showScreen(name) {
+      Object.values(screens).forEach(el => el.style.display = 'none');
+      screens[name].style.display = 'flex';
+    }
+
+    document.querySelectorAll('[data-back]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        disconnectWs();
+        showScreen(btn.dataset.back);
+      });
+    });
+
+    // ── 자막 요소 ──
+    const oldEl   = document.getElementById('old-line');
+    const prevEl  = document.getElementById('prev-line');
+    const currEl  = document.getElementById('curr-line');
+    const divider = document.getElementById('divider');
+
+    let lines = ['', '', ''];
+
+    function updateDisplay(interim = '') {
+      oldEl.textContent  = lines[0];
+      prevEl.textContent = lines[1];
+      divider.style.display = (lines[0] || lines[1]) ? 'block' : 'none';
+      currEl.innerHTML = lines[2]
+        + (interim ? `<span class="interim"> ${interim}</span>` : '');
+    }
+
+    function clearLines() {
+      lines = ['', '', ''];
+      updateDisplay();
+    }
+
+    // ── WebSocket ──
+    let ws = null;
+    let wsReconnectTimer = null;
+    let currentWsRole = null;
+    let currentRoomCode = null;
+
+    function connectWs(role, code, onOpen, onMsg) {
+      disconnectWs();
+      currentWsRole  = role;
+      currentRoomCode = code;
+
+      function tryConnect() {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ type: 'join', role, room: code }));
+          onOpen && onOpen();
+        };
+        ws.onmessage = (e) => {
+          let msg;
+          try { msg = JSON.parse(e.data); } catch { return; }
+          onMsg && onMsg(msg);
+        };
+        ws.onclose = () => {
+          ws = null;
+          if (currentWsRole) {
+            wsReconnectTimer = setTimeout(tryConnect, 2000);
+          }
+        };
+        ws.onerror = () => ws.close();
+      }
+      tryConnect();
+    }
+
+    function disconnectWs() {
+      currentWsRole = null;
+      clearTimeout(wsReconnectTimer);
+      if (ws) { ws.close(); ws = null; }
+    }
+
+    function wsSend(data) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+      }
+    }
+
+    // ── 룸코드 생성 ──
+    function randomCode() {
+      return String(Math.floor(1000 + Math.random() * 9000));
+    }
+
+    // ── 음성인식 ──
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      document.querySelector('#caption-area').style.display = 'none';
-      document.querySelector('#status-bar').style.display = 'none';
-      document.querySelector('#no-support').style.display = 'block';
-    } else {
-      const recognition = new SpeechRecognition();
+      document.getElementById('mode-screen').style.display = 'none';
+      document.getElementById('no-support').style.display = 'block';
+    }
+
+    let recognition = null;
+    let isListening = false;
+    let silenceTimer = null;
+    let sendMode = false; // true면 음성인식 결과를 WS로도 전송
+
+    const KO_SPLIT = /((?:습니다|입니다|합니다|됩니다|있습니다|없습니다|[요죠네군다까어야])(?=\s|$))/g;
+
+    function splitSentences(text) {
+      const parts = text.split(KO_SPLIT).filter(s => s.trim());
+      const sentences = [];
+      for (let i = 0; i < parts.length; i += 2) {
+        const s = ((parts[i] || '') + (parts[i + 1] || '')).trim();
+        if (s) sentences.push(s);
+      }
+      return sentences.length ? sentences : [text];
+    }
+
+    function getBest(result) {
+      let best = result[0];
+      for (let i = 1; i < result.length; i++) {
+        if (result[i].confidence > best.confidence) best = result[i];
+      }
+      return best.transcript.trim();
+    }
+
+    function commitText(text) {
+      if (!text) return;
+      splitSentences(text).forEach(s => {
+        lines[0] = lines[1];
+        lines[1] = lines[2];
+        lines[2] = s;
+      });
+      updateDisplay();
+      if (sendMode) wsSend({ type: 'text', text: lines[2], interim: false });
+    }
+
+    function initRecognition() {
+      if (!SpeechRecognition) return;
+      recognition = new SpeechRecognition();
       recognition.lang = 'ko-KR';
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 3;
-
-      const oldEl   = document.getElementById('old-line');
-      const prevEl  = document.getElementById('prev-line');
-      const currEl  = document.getElementById('curr-line');
-      const divider = document.getElementById('divider');
-      const micBtn  = document.getElementById('mic-btn');
-      const statusTx = document.getElementById('status-text');
-      const clearBtn = document.getElementById('clear-btn');
-
-      let isListening = false;
-      let lines = ['', '', ''];  // [가장 오래된, 이전, 현재]
-      let silenceTimer = null;
-
-      function getBest(result) {
-        let best = result[0];
-        for (let i = 1; i < result.length; i++) {
-          if (result[i].confidence > best.confidence) best = result[i];
-        }
-        return best.transcript.trim();
-      }
-
-      function updateDisplay(interim = '') {
-        oldEl.textContent  = lines[0];
-        prevEl.textContent = lines[1];
-        divider.style.display = (lines[0] || lines[1]) ? 'block' : 'none';
-        currEl.innerHTML = lines[2]
-          + (interim ? `<span class="interim"> ${interim}</span>` : '');
-      }
-
-      // 한국어 문장 끝 어미 기준 분리
-      const KO_SPLIT = /((?:습니다|입니다|합니다|됩니다|있습니다|없습니다|[요죠네군다까어야])(?=\s|$))/g;
-
-      function splitSentences(text) {
-        const parts = text.split(KO_SPLIT).filter(s => s.trim());
-        const sentences = [];
-        for (let i = 0; i < parts.length; i += 2) {
-          const s = ((parts[i] || '') + (parts[i + 1] || '')).trim();
-          if (s) sentences.push(s);
-        }
-        return sentences.length ? sentences : [text];
-      }
-
-      function commitText(text) {
-        if (!text) return;
-        const sentences = splitSentences(text);
-        sentences.forEach(s => {
-          lines[0] = lines[1];
-          lines[1] = lines[2];
-          lines[2] = s;
-        });
-        updateDisplay();
-      }
 
       recognition.onresult = (event) => {
         let interim = '';
@@ -252,16 +527,15 @@
           }
         }
         updateDisplay(interim);
+        if (sendMode && interim) wsSend({ type: 'text', text: interim, interim: true });
       };
 
-      // 침묵 2.5초 후 현재 줄 확정
       recognition.onspeechend = () => {
         silenceTimer = setTimeout(() => {
           if (lines[2]) {
-            lines[0] = lines[1];
-            lines[1] = lines[2];
-            lines[2] = '';
+            lines[0] = lines[1]; lines[1] = lines[2]; lines[2] = '';
             updateDisplay();
+            if (sendMode) wsSend({ type: 'text', text: '', interim: false });
           }
         }, 2500);
       };
@@ -269,10 +543,10 @@
 
       recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
-          statusTx.textContent = '마이크 권한이 필요합니다';
+          document.getElementById('status-text').textContent = '마이크 권한이 필요합니다';
           setListening(false);
         } else if (e.error === 'network') {
-          statusTx.textContent = '네트워크 오류 — 재연결 중...';
+          document.getElementById('status-text').textContent = '네트워크 오류 — 재연결 중...';
         } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
           console.warn('인식 오류:', e.error);
         }
@@ -281,24 +555,144 @@
       recognition.onend = () => {
         if (isListening) setTimeout(() => { if (isListening) recognition.start(); }, 150);
       };
+    }
 
-      function setListening(state) {
-        isListening = state;
-        micBtn.classList.toggle('listening', state);
-        micBtn.textContent = state ? '⏹' : '🎤';
-        statusTx.textContent = state ? '듣는 중...' : '마이크 버튼을 눌러 시작하세요';
+    function setListening(state) {
+      isListening = state;
+      const micBtn = document.getElementById('mic-btn');
+      const statusTx = document.getElementById('status-text');
+      micBtn.classList.toggle('listening', state);
+      micBtn.textContent = state ? '⏹' : '🎤';
+      statusTx.textContent = state ? '듣는 중...' : '마이크 버튼을 눌러 시작하세요';
+    }
+
+    function startCaption(isSend) {
+      sendMode = isSend;
+      document.getElementById('status-bar').style.display = 'flex';
+      document.getElementById('display-status-bar').style.display = 'none';
+      document.body.classList.remove('display-mode');
+      showScreen('caption');
+      clearLines();
+      initRecognition();
+    }
+
+    // ── 이벤트: 마이크 버튼 ──
+    document.getElementById('mic-btn').addEventListener('click', () => {
+      if (!recognition) return;
+      if (isListening) { recognition.stop(); setListening(false); }
+      else             { recognition.start(); setListening(true); }
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      clearLines();
+      if (sendMode) wsSend({ type: 'clear' });
+    });
+
+    // ── 모드 선택 ──
+    document.getElementById('btn-solo').addEventListener('click', () => {
+      disconnectWs();
+      startCaption(false);
+    });
+
+    // ── SEND 모드 ──
+    document.getElementById('btn-send').addEventListener('click', () => {
+      showScreen('room-send');
+      const code = randomCode();
+      document.getElementById('generated-code').textContent = code;
+      document.getElementById('send-conn-status').textContent = '서버 연결 중...';
+      document.getElementById('send-conn-status').className = 'conn-status';
+      document.getElementById('btn-start-send').disabled = true;
+
+      connectWs('sender', code,
+        () => {
+          document.getElementById('send-conn-status').textContent = '서버 연결됨 — DISPLAY 기기 대기 중...';
+          document.getElementById('send-conn-status').className = 'conn-status ok';
+          document.getElementById('btn-start-send').disabled = false;
+        },
+        (msg) => {
+          if (msg.type === 'display_joined') {
+            document.getElementById('send-conn-status').textContent = `화면 기기 ${msg.count}대 연결됨 ✓`;
+            document.getElementById('send-conn-status').className = 'conn-status ok';
+          }
+          if (msg.type === 'display_left') {
+            document.getElementById('send-conn-status').textContent =
+              msg.count > 0 ? `화면 기기 ${msg.count}대 연결됨` : '화면 기기 연결 끊김';
+          }
+        }
+      );
+    });
+
+    document.getElementById('btn-start-send').addEventListener('click', () => {
+      startCaption(true);
+    });
+
+    // ── DISPLAY 모드 ──
+    document.getElementById('btn-display').addEventListener('click', () => {
+      showScreen('room-display');
+      document.getElementById('room-code-input').value = '';
+      document.getElementById('display-conn-status').textContent = '';
+    });
+
+    document.getElementById('btn-connect-display').addEventListener('click', () => {
+      const code = document.getElementById('room-code-input').value.trim();
+      if (code.length !== 4) {
+        document.getElementById('display-conn-status').textContent = '4자리 코드를 입력하세요';
+        document.getElementById('display-conn-status').className = 'conn-status err';
+        return;
       }
 
-      micBtn.addEventListener('click', () => {
-        if (isListening) { recognition.stop(); setListening(false); }
-        else             { recognition.start(); setListening(true); }
-      });
+      document.getElementById('display-conn-status').textContent = '연결 중...';
+      document.getElementById('display-conn-status').className = 'conn-status';
 
-      clearBtn.addEventListener('click', () => {
-        lines = ['', '', ''];
-        updateDisplay();
-      });
-    }
+      connectWs('display', code,
+        () => {},
+        (msg) => {
+          if (msg.type === 'joined') {
+            // 화면 전환
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('display-status-bar').style.display = 'flex';
+            document.getElementById('display-room-badge').textContent = code;
+            document.getElementById('display-ws-status').textContent = '연결됨 — 자막 대기 중';
+            document.body.classList.add('display-mode');
+            showScreen('caption');
+            clearLines();
+          }
+
+          if (msg.type === 'text') {
+            if (msg.interim) {
+              updateDisplay(msg.text);
+            } else {
+              if (msg.text) {
+                lines[0] = lines[1];
+                lines[1] = lines[2];
+                lines[2] = msg.text;
+              } else {
+                lines[0] = lines[1];
+                lines[1] = lines[2];
+                lines[2] = '';
+              }
+              updateDisplay();
+            }
+            document.getElementById('display-ws-status').textContent = '수신 중...';
+          }
+
+          if (msg.type === 'clear') {
+            clearLines();
+          }
+
+          if (msg.type === 'sender_disconnected') {
+            document.getElementById('display-ws-status').textContent = '송신 기기 연결 끊김 — 대기 중...';
+          }
+        }
+      );
+    });
+
+    // 4자리 입력 시 자동 연결
+    document.getElementById('room-code-input').addEventListener('input', (e) => {
+      if (e.target.value.length === 4) {
+        document.getElementById('btn-connect-display').click();
+      }
+    });
   </script>
 </body>
 </html>
