@@ -157,6 +157,7 @@
       recognition.lang = 'ko-KR';
       recognition.continuous = true;
       recognition.interimResults = true;
+      recognition.maxAlternatives = 3; // 여러 후보 중 신뢰도 가장 높은 것 선택
 
       const prevLine = document.getElementById('prev-line');
       const currLine = document.getElementById('curr-line');
@@ -165,15 +166,36 @@
       const clearBtn = document.getElementById('clear-btn');
 
       let isListening = false;
-      let lines = ['', ''];  // [prev, current]
+      let lines = ['', ''];
+      let silenceTimer = null;
+
+      // 문장 끝 부호 감지
+      const sentenceEnders = /[.!?。！？]\s*$/;
+
+      // maxAlternatives 중 신뢰도 가장 높은 후보 선택
+      function getBestTranscript(result) {
+        let best = result[0];
+        for (let i = 1; i < result.length; i++) {
+          if (result[i].confidence > best.confidence) best = result[i];
+        }
+        return best.transcript.trim();
+      }
+
+      // 불필요한 공백 정리
+      function cleanText(text) {
+        return text.replace(/\s+/g, ' ').trim();
+      }
 
       function updateDisplay(interimText = '') {
         prevLine.textContent = lines[0];
-        if (interimText) {
-          currLine.innerHTML = `${lines[1]}<span class="interim">${interimText}</span>`;
-        } else {
-          currLine.textContent = lines[1];
-        }
+        const safeInterim = interimText
+          ? `<span class="interim">${interimText}</span>` : '';
+        currLine.innerHTML = lines[1] + safeInterim;
+      }
+
+      function pushLine(text) {
+        lines[0] = lines[1];
+        lines[1] = text;
       }
 
       recognition.onresult = (event) => {
@@ -183,18 +205,19 @@
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
-            finalText += result[0].transcript;
+            finalText += getBestTranscript(result);
           } else {
             interim += result[0].transcript;
           }
         }
 
         if (finalText) {
-          const combined = lines[1] + finalText;
-          // 현재 줄이 길어지면 위로 올리고 새 줄 시작
-          if (combined.length > 24) {
-            lines[0] = combined;
-            lines[1] = '';
+          const cleaned = cleanText(finalText);
+          const combined = lines[1] + cleaned;
+
+          // 문장 끝 부호이거나 20자 초과 시 줄바꿈
+          if (sentenceEnders.test(cleaned) || combined.length > 20) {
+            pushLine(combined);
           } else {
             lines[1] = combined;
           }
@@ -203,18 +226,28 @@
         updateDisplay(interim);
       };
 
+      // 침묵 1.5초 후 자동 줄바꿈
+      recognition.onspeechend = () => {
+        silenceTimer = setTimeout(() => {
+          if (lines[1]) { pushLine(''); updateDisplay(); }
+        }, 1500);
+      };
+      recognition.onspeechstart = () => clearTimeout(silenceTimer);
+
       recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
           statusText.textContent = '마이크 권한이 필요합니다';
           setListening(false);
-        } else if (e.error !== 'no-speech') {
+        } else if (e.error === 'network') {
+          statusText.textContent = '네트워크 오류 — 재연결 중...';
+        } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
           console.warn('인식 오류:', e.error);
         }
       };
 
       recognition.onend = () => {
-        // 자동 재시작 (continuous 유지)
-        if (isListening) recognition.start();
+        // 150ms 딜레이 후 재시작 (연속 재시작 충돌 방지)
+        if (isListening) setTimeout(() => { if (isListening) recognition.start(); }, 150);
       };
 
       function setListening(state) {
