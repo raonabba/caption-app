@@ -25,17 +25,26 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      gap: 24px;
+      gap: 20px;
     }
 
-    /* 이전 문장: 작고 흐리게 */
+    /* 2줄 전 문장: 가장 흐리게 */
+    .line-old {
+      font-size: 30px;
+      font-weight: 400;
+      line-height: 1.4;
+      color: #ccc;
+      min-height: 1.4em;
+      word-break: keep-all;
+    }
+
+    /* 1줄 전 문장 */
     .line-prev {
-      font-size: 36px;
+      font-size: 38px;
       font-weight: 500;
       line-height: 1.4;
-      color: #bbb;
+      color: #aaa;
       min-height: 1.4em;
-      transition: color 0.3s;
       word-break: keep-all;
     }
 
@@ -57,9 +66,9 @@
       word-break: keep-all;
     }
 
-    /* 인식 중 (회색 이탤릭) */
+    /* 인식 중 */
     .interim {
-      color: #aaa;
+      color: #bbb;
       font-weight: 600;
     }
 
@@ -138,8 +147,9 @@
   <div id="beta-badge">베타 테스트</div>
 
   <div id="caption-area">
+    <div class="line-old"  id="old-line"></div>
     <div class="line-prev" id="prev-line"></div>
-    <div class="divider" id="divider" style="display:none"></div>
+    <div class="divider"   id="divider" style="display:none"></div>
     <div class="line-current" id="curr-line"></div>
   </div>
 
@@ -168,19 +178,18 @@
       recognition.interimResults = true;
       recognition.maxAlternatives = 3;
 
-      const prevEl   = document.getElementById('prev-line');
-      const currEl   = document.getElementById('curr-line');
-      const divider  = document.getElementById('divider');
-      const micBtn   = document.getElementById('mic-btn');
+      const oldEl   = document.getElementById('old-line');
+      const prevEl  = document.getElementById('prev-line');
+      const currEl  = document.getElementById('curr-line');
+      const divider = document.getElementById('divider');
+      const micBtn  = document.getElementById('mic-btn');
       const statusTx = document.getElementById('status-text');
       const clearBtn = document.getElementById('clear-btn');
 
       let isListening = false;
-      let prevText    = '';
-      let currText    = '';
+      let lines = ['', '', ''];  // [가장 오래된, 이전, 현재]
       let silenceTimer = null;
 
-      // maxAlternatives 중 신뢰도 가장 높은 후보
       function getBest(result) {
         let best = result[0];
         for (let i = 1; i < result.length; i++) {
@@ -190,43 +199,39 @@
       }
 
       function updateDisplay(interim = '') {
-        prevEl.textContent = prevText;
-        divider.style.display = prevText ? 'block' : 'none';
-        currEl.innerHTML = currText
+        oldEl.textContent  = lines[0];
+        prevEl.textContent = lines[1];
+        divider.style.display = (lines[0] || lines[1]) ? 'block' : 'none';
+        currEl.innerHTML = lines[2]
           + (interim ? `<span class="interim"> ${interim}</span>` : '');
       }
 
-      // 한국어 문장 끝 패턴으로 분리
-      // ~요, ~다, ~까, ~죠, ~네, ~군, ~어, ~야 + (공백 or 끝)
+      // 한국어 문장 끝 어미 기준 분리
       const KO_SPLIT = /((?:습니다|입니다|합니다|됩니다|있습니다|없습니다|[요죠네군다까어야])(?=\s|$))/g;
 
       function splitSentences(text) {
-        // 패턴 기준으로 자르되 구분자 포함
         const parts = text.split(KO_SPLIT).filter(s => s.trim());
         const sentences = [];
         for (let i = 0; i < parts.length; i += 2) {
-          const body = parts[i] || '';
-          const ender = parts[i + 1] || '';
-          const s = (body + ender).trim();
+          const s = ((parts[i] || '') + (parts[i + 1] || '')).trim();
           if (s) sentences.push(s);
         }
         return sentences.length ? sentences : [text];
       }
 
-      // 확정 텍스트를 문장 단위로 나눠서 차례로 표시
       function commitText(text) {
         if (!text) return;
         const sentences = splitSentences(text);
         sentences.forEach(s => {
-          prevText = currText;
-          currText = s;
+          lines[0] = lines[1];
+          lines[1] = lines[2];
+          lines[2] = s;
         });
         updateDisplay();
       }
 
       recognition.onresult = (event) => {
         let interim = '';
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const r = event.results[i];
           if (r.isFinal) {
@@ -235,19 +240,19 @@
             interim += r[0].transcript;
           }
         }
-
         updateDisplay(interim);
       };
 
-      // 침묵 2초 후 현재 문장 이전으로 밀기
+      // 침묵 2.5초 후 현재 줄 확정
       recognition.onspeechend = () => {
         silenceTimer = setTimeout(() => {
-          if (currText) {
-            prevText = currText;
-            currText = '';
+          if (lines[2]) {
+            lines[0] = lines[1];
+            lines[1] = lines[2];
+            lines[2] = '';
             updateDisplay();
           }
-        }, 2000);
+        }, 2500);
       };
       recognition.onspeechstart = () => clearTimeout(silenceTimer);
 
@@ -279,7 +284,7 @@
       });
 
       clearBtn.addEventListener('click', () => {
-        prevText = ''; currText = '';
+        lines = ['', '', ''];
         updateDisplay();
       });
     }
