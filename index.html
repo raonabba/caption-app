@@ -20,35 +20,47 @@
 
     #caption-area {
       width: 100%;
-      max-width: 900px;
-      padding: 40px 48px;
-      min-height: 220px;
+      max-width: 960px;
+      padding: 40px 48px 120px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      gap: 16px;
+      gap: 24px;
     }
 
-    .line {
-      font-size: 52px;
-      font-weight: 700;
-      line-height: 1.3;
-      color: #111;
-      transition: opacity 0.3s;
-    }
-
-    .line.prev {
-      opacity: 0.35;
-      font-size: 38px;
+    /* 이전 문장: 작고 흐리게 */
+    .line-prev {
+      font-size: 36px;
       font-weight: 500;
+      line-height: 1.4;
+      color: #bbb;
+      min-height: 1.4em;
+      transition: color 0.3s;
+      word-break: keep-all;
     }
 
-    .line.current {
-      opacity: 1;
+    /* 구분선 */
+    .divider {
+      width: 48px;
+      height: 3px;
+      background: #e0e0e0;
+      border-radius: 2px;
     }
 
+    /* 현재 문장: 크고 진하게 */
+    .line-current {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: #111;
+      min-height: 1.35em;
+      word-break: keep-all;
+    }
+
+    /* 인식 중 (회색 이탤릭) */
     .interim {
-      color: #888;
+      color: #aaa;
+      font-weight: 600;
     }
 
     #status-bar {
@@ -61,7 +73,7 @@
       justify-content: center;
       gap: 12px;
       padding: 16px;
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.97);
       border-top: 1px solid #eee;
     }
 
@@ -85,13 +97,10 @@
 
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
-      50% { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); }
+      50%       { box-shadow: 0 0 0 10px rgba(229, 57, 53, 0); }
     }
 
-    #status-text {
-      font-size: 15px;
-      color: #666;
-    }
+    #status-text { font-size: 15px; color: #666; }
 
     #clear-btn {
       background: none;
@@ -102,7 +111,6 @@
       color: #888;
       cursor: pointer;
     }
-
     #clear-btn:hover { background: #f5f5f5; }
 
     #beta-badge {
@@ -110,7 +118,7 @@
       top: 16px;
       right: 20px;
       background: #f0f0f0;
-      color: #888;
+      color: #999;
       font-size: 12px;
       padding: 4px 10px;
       border-radius: 12px;
@@ -130,8 +138,9 @@
   <div id="beta-badge">베타 테스트</div>
 
   <div id="caption-area">
-    <div class="line prev" id="prev-line"></div>
-    <div class="line current" id="curr-line"></div>
+    <div class="line-prev" id="prev-line"></div>
+    <div class="divider" id="divider" style="display:none"></div>
+    <div class="line-current" id="curr-line"></div>
   </div>
 
   <div id="status-bar">
@@ -157,23 +166,22 @@
       recognition.lang = 'ko-KR';
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 3; // 여러 후보 중 신뢰도 가장 높은 것 선택
+      recognition.maxAlternatives = 3;
 
-      const prevLine = document.getElementById('prev-line');
-      const currLine = document.getElementById('curr-line');
-      const micBtn = document.getElementById('mic-btn');
-      const statusText = document.getElementById('status-text');
+      const prevEl   = document.getElementById('prev-line');
+      const currEl   = document.getElementById('curr-line');
+      const divider  = document.getElementById('divider');
+      const micBtn   = document.getElementById('mic-btn');
+      const statusTx = document.getElementById('status-text');
       const clearBtn = document.getElementById('clear-btn');
 
       let isListening = false;
-      let lines = ['', ''];
+      let prevText    = '';   // 이전 문장 (확정)
+      let currText    = '';   // 현재 문장 (확정 누적)
       let silenceTimer = null;
 
-      // 문장 끝 부호 감지
-      const sentenceEnders = /[.!?。！？]\s*$/;
-
-      // maxAlternatives 중 신뢰도 가장 높은 후보 선택
-      function getBestTranscript(result) {
+      // maxAlternatives 중 신뢰도 가장 높은 후보
+      function getBest(result) {
         let best = result[0];
         for (let i = 1; i < result.length; i++) {
           if (result[i].confidence > best.confidence) best = result[i];
@@ -181,72 +189,61 @@
         return best.transcript.trim();
       }
 
-      // 불필요한 공백 정리
-      function cleanText(text) {
-        return text.replace(/\s+/g, ' ').trim();
+      function updateDisplay(interim = '') {
+        prevEl.textContent  = prevText;
+        divider.style.display = prevText ? 'block' : 'none';
+        currEl.innerHTML = currText
+          + (interim ? `<span class="interim"> ${interim}</span>` : '');
       }
 
-      function updateDisplay(interimText = '') {
-        prevLine.textContent = lines[0];
-        const safeInterim = interimText
-          ? `<span class="interim">${interimText}</span>` : '';
-        currLine.innerHTML = lines[1] + safeInterim;
-      }
-
-      function pushLine(text) {
-        lines[0] = lines[1];
-        lines[1] = text;
+      // isFinal 결과가 올 때마다 = 문장 1개 완성 → 줄바꿈
+      function commitSentence(text) {
+        if (!text) return;
+        prevText = currText;   // 이전 줄로 밀기
+        currText = text;       // 새 문장 시작
+        updateDisplay();
       }
 
       recognition.onresult = (event) => {
         let interim = '';
-        let finalText = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalText += getBestTranscript(result);
+          const r = event.results[i];
+          if (r.isFinal) {
+            // 확정된 문장 → 무조건 새 줄
+            commitSentence(getBest(r));
           } else {
-            interim += result[0].transcript;
-          }
-        }
-
-        if (finalText) {
-          const cleaned = cleanText(finalText);
-          const combined = lines[1] + cleaned;
-
-          // 문장 끝 부호이거나 20자 초과 시 줄바꿈
-          if (sentenceEnders.test(cleaned) || combined.length > 20) {
-            pushLine(combined);
-          } else {
-            lines[1] = combined;
+            interim += r[0].transcript;
           }
         }
 
         updateDisplay(interim);
       };
 
-      // 침묵 1.5초 후 자동 줄바꿈
+      // 침묵 2초 후 현재 문장 확정
       recognition.onspeechend = () => {
         silenceTimer = setTimeout(() => {
-          if (lines[1]) { pushLine(''); updateDisplay(); }
-        }, 1500);
+          if (currText) {
+            prevText = currText;
+            currText = '';
+            updateDisplay();
+          }
+        }, 2000);
       };
       recognition.onspeechstart = () => clearTimeout(silenceTimer);
 
       recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
-          statusText.textContent = '마이크 권한이 필요합니다';
+          statusTx.textContent = '마이크 권한이 필요합니다';
           setListening(false);
         } else if (e.error === 'network') {
-          statusText.textContent = '네트워크 오류 — 재연결 중...';
+          statusTx.textContent = '네트워크 오류 — 재연결 중...';
         } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
           console.warn('인식 오류:', e.error);
         }
       };
 
       recognition.onend = () => {
-        // 150ms 딜레이 후 재시작 (연속 재시작 충돌 방지)
         if (isListening) setTimeout(() => { if (isListening) recognition.start(); }, 150);
       };
 
@@ -254,21 +251,16 @@
         isListening = state;
         micBtn.classList.toggle('listening', state);
         micBtn.textContent = state ? '⏹' : '🎤';
-        statusText.textContent = state ? '듣는 중...' : '마이크 버튼을 눌러 시작하세요';
+        statusTx.textContent = state ? '듣는 중...' : '마이크 버튼을 눌러 시작하세요';
       }
 
       micBtn.addEventListener('click', () => {
-        if (isListening) {
-          recognition.stop();
-          setListening(false);
-        } else {
-          recognition.start();
-          setListening(true);
-        }
+        if (isListening) { recognition.stop(); setListening(false); }
+        else             { recognition.start(); setListening(true); }
       });
 
       clearBtn.addEventListener('click', () => {
-        lines = ['', ''];
+        prevText = ''; currText = '';
         updateDisplay();
       });
     }
